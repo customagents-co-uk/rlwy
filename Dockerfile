@@ -2,12 +2,15 @@ FROM node:24-bookworm
 
 ARG PAPERCLIP_VERSION=latest
 
-ENV HOME=/data \
+# IMPORTANT:
+# /data is Railway's persistent volume.
+# Keep executables outside /data.
+ENV HOME=/root \
     HERMES_HOME=/data/hermes \
     PAPERCLIP_HOME=/data/paperclip \
     PAPERCLIP_INSTANCE_ID=default \
     NODE_ENV=production \
-    PATH=/data/.local/bin:/root/.local/bin:/usr/local/bin:/usr/bin:/bin
+    PATH=/usr/local/bin:/root/.local/bin:/usr/bin:/bin
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
@@ -21,34 +24,31 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tini \
     && rm -rf /var/lib/apt/lists/*
 
-# Persistent directories
+# Persistent state only.
+# Do NOT install executables under /data.
 RUN mkdir -p \
     /data \
     /data/hermes \
-    /data/paperclip \
-    /data/.local/bin
+    /data/paperclip
 
 # Paperclip
 RUN npm install -g "paperclipai@${PAPERCLIP_VERSION}"
 
 # Hermes
+# HOME=/root means the installer puts the launcher at:
+# /root/.local/bin/hermes
 #
-# The official installer creates the CLI wrapper at:
-#   ~/.local/bin/hermes
-#
-# HOME=/data therefore makes that:
-#   /data/.local/bin/hermes
-#
+# This location is NOT hidden by Railway's /data volume.
 RUN curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
 
-# Make absolutely sure the launcher is available system-wide.
-RUN if [ -x /data/.local/bin/hermes ]; then \
-        ln -sf /data/.local/bin/hermes /usr/local/bin/hermes; \
-    elif [ -x /root/.local/bin/hermes ]; then \
+# Put Hermes somewhere permanently outside the Railway volume.
+RUN if [ -x /root/.local/bin/hermes ]; then \
         ln -sf /root/.local/bin/hermes /usr/local/bin/hermes; \
+    elif [ -x /data/.local/bin/hermes ]; then \
+        ln -sf /data/.local/bin/hermes /usr/local/bin/hermes; \
     else \
         echo "ERROR: Hermes installer did not create hermes launcher"; \
-        find /data /root -type f -name hermes -perm -111 2>/dev/null || true; \
+        find /root /data -type f -name hermes -perm -111 2>/dev/null || true; \
         exit 1; \
     fi
 

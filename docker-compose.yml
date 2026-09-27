@@ -5,22 +5,41 @@ services:
       args:
         PAPERCLIP_VERSION: latest
         HERMES_BRANCH: main
+
     environment:
+      HOME: /root
+
       PORT: 3100
+
       HERMES_HOME: /data/hermes
       PAPERCLIP_HOME: /data/paperclip
       PAPERCLIP_INSTANCE_ID: default
+
       PAPERCLIP_DEPLOYMENT_MODE: ${PAPERCLIP_DEPLOYMENT_MODE:-local_trusted}
       PAPERCLIP_DEPLOYMENT_EXPOSURE: ${PAPERCLIP_DEPLOYMENT_EXPOSURE:-private}
+
       PAPERCLIP_AUTH_PUBLIC_BASE_URL: ${PAPERCLIP_AUTH_PUBLIC_BASE_URL:-}
       PAPERCLIP_ALLOWED_HOSTNAMES: ${PAPERCLIP_ALLOWED_HOSTNAMES:-}
+
       FOUNDER_MODEL: ${FOUNDER_MODEL:-anthropic/claude-sonnet-4.6}
+
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+
+      # Keep internal Paperclip <-> Hermes traffic off any proxy.
+      NO_PROXY: ${NO_PROXY:-127.0.0.1,localhost,::1}
+
+      HTTP_PROXY: ${HTTP_PROXY:-}
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+      ALL_PROXY: ${ALL_PROXY:-}
+
     ports:
       - "3100:3100"
+
     volumes:
       - founder-data:/data
+
 volumes:
   founder-data:
